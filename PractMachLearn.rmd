@@ -1,0 +1,99 @@
+---
+title: "PracticalMachineLearning"
+author: "Subhash Mantha"
+date: "Tuesday, July 22, 2014"
+output: html_document
+---
+Summary:
+---------
+This exercise is to predict the way an exercise is classified based on the bodily movements, and positions. The data for this exercise is obtained from the work done by Ugulino et al. (Ugulino, W.; Cardador, D.; Vega, K.; Velloso, E.; Milidiu, R.; Fuks, H. Wearable Computing: Accelerometers' Data Classification of Body Postures and Movements Read more: http://groupware.les.inf.puc-rio.br/har#weight_lifting_exercises#ixzz38KSCiFFa) . The exercise described is a barbell lift. The outcomes of  the exercise are categorized into five different groups A through E. A is the correct way of doing the exercise whereas categories B through E are with atleast one type of mistake either in movement or position. The data is collected via accelerometers connected to the arm, forearm and belt. The dumbbell has a sensor on it which tracks its position in the three dimensional space. Principal component Analysis and Random Forest methods have been used in building the model.Out of sample error from the cross validaation set is less than 3%
+
+Analysis:
+-----------
+Libraries have been used as part of the analysis are *randomForest*,*caret* and *e1071*. As first step data is cleansed of all the derived variables. Other variables that have unusable values are also cleaned up. Principal Component analysis is used to identify the variables that are used in the final model. pml-training.csv file is split into two dataframes with a 60/40 split ratio. 60 % of the data is used to train the model and remaining 40 % is used for cross validating the model.
+
+```{r Reading_and_Cleaning  }
+set.seed(2343)
+library(randomForest)
+library("e1071", lib.loc="C:/Program Files/R/R-3.0.3/library")
+library(caret)
+traindata<-read.csv("./pml-training.csv", header=TRUE, as.is = TRUE, stringsAsFactors = FALSE, sep=',', na.strings=c('NA','','#DIV/0!'))
+testdata<-read.csv("./pml-testing.csv", header=TRUE, as.is = TRUE, stringsAsFactors = FALSE, sep=',', na.strings=c('NA','','#DIV/0!'))
+collist<-colnames(traindata)
+
+collistr<-grep("avg_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist<-collist[!collist %in% collistr]
+
+collistr<-grep("stddev_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist<-collist[!collist %in% collistr]
+
+collistr<-grep("skewness_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist<-collist[!collist %in% collistr]
+
+collistr<-grep("var_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist<-collist[!collist %in% collistr]
+
+collistr<-grep("min_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist<-collist[!collist %in% collistr]
+
+collistr<-grep("max_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist<-collist[!collist %in% collistr]
+
+collistr<-grep("total_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist<-collist[!collist %in% collistr]
+
+collistr<-grep("kurtosis_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist<-collist[!collist %in% collistr]
+
+collistr<-grep("amplitude_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist<-collist[!collist %in% collistr]
+
+dataforanaltrain<-traindata[,collist]
+
+intrain<-createDataPartition(y=dataforanaltrain$classe,p=0.6,list=FALSE)
+Train<-dataforanaltrain[intrain,]
+Test<-dataforanaltrain[-intrain,]
+
+collistn<-collist[!collist %in% c("classe","X","user_name","raw_timestamp_part_1","raw_timestamp_part_2","cvtd_timestamp","new_window" ,        "num_window")]
+```
+Principal Component Analysis is used to identify the list of varaibles that need to go into the final model. From the screeplot it has been identified that the first four varaibles need to be in the model. These variables have been identified as *set1*. The second set *set2* has been identified based on Kaiser criterion (having stdevsq > 1). The third set *set3* is identified as the list of variables that explain 99% of variation in the model.
+```{r PCA_for_analysis }
+x<-prcomp(Train[,collistn])
+screeplot(x, type="lines")
+x$sdev^2
+Train$classe <- as.factor(Train$classe)
+```
+```{r,cache=TRUE }
+set1 <- collistn[1:4]
+set2 <- collistn[1:12]
+set3 <- collistn[1:33]
+
+collistn<-c(set1,"classe")
+modFit1 <- train(classe ~., method="rf", data=Train[,collistn], trControl=trainControl(method='cv'), number=5, allowParallel=TRUE )
+testingPred1 <- predict(modFit1, Test[,set1])
+table(testingPred1==Test$classe)
+
+collistn<-c(set2,"classe")
+modFit2 <- train(classe ~., method="rf", data=Train[,collistn], trControl=trainControl(method='cv'), number=5, allowParallel=TRUE )
+testingPred2 <- predict(modFit2, Test[,set2])
+table(testingPred2==Test$classe)
+
+collistn<-c(set3,"classe")
+modFit3 <- train(classe ~., method="rf", data=Train[,collistn], trControl=trainControl(method='cv'), number=5, allowParallel=TRUE )
+testingPred3 <- predict(modFit3, Test[,set3])
+table(testingPred3==Test$classe)
+```
+Random forest was used to build the models and the model results thus obtained is used to predict the results of the cross validation sets. Ten fold cross validation is performed during the tree selection. The results for the final model are shown below. The final model modFit3 is used for predicting the results of pml-testing.csv data. 
+```{r,echo=TRUE}
+modFit3
+testingPred <- predict(modFit3, testdata[,set3])
+```
