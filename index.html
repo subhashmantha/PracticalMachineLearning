@@ -1,0 +1,213 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Practicalmachinelearning by subhashmantha</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Practicalmachinelearning</h1>
+        <p></p>
+
+        <p class="view"><a href="https://github.com/subhashmantha/PracticalMachineLearning">View the Project on GitHub <small>subhashmantha/PracticalMachineLearning</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/subhashmantha/PracticalMachineLearning/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/subhashmantha/PracticalMachineLearning/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/subhashmantha/PracticalMachineLearning">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <p></p>
+
+<p></p>
+
+<p></p>
+
+<p></p>
+
+<p></p>PracticalMachineLearning<p></p>
+
+code{white-space: pre;}<p></p>
+
+
+  pre:not([class]) {
+    background-color: white;
+  }
+<p></p>
+
+<p></p>
+
+
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+<div>
+
+
+<div>
+<h1>
+<a name="practicalmachinelearning" class="anchor" href="#practicalmachinelearning"><span class="octicon octicon-link"></span></a>PracticalMachineLearning</h1>
+<h4>
+<a name="subhash-mantha" class="anchor" href="#subhash-mantha"><span class="octicon octicon-link"></span></a><em>Subhash Mantha</em>
+</h4>
+<h4>
+<a name="tuesday-july-22-2014" class="anchor" href="#tuesday-july-22-2014"><span class="octicon octicon-link"></span></a><em>Tuesday, July 22, 2014</em>
+</h4>
+</div>
+
+<div>
+<h2>
+<a name="summary" class="anchor" href="#summary"><span class="octicon octicon-link"></span></a>Summary:</h2>
+<p>This exercise is to predict the way an exercise is classified based on the bodily movements, and positions. The data for this exercise is obtained from the work done by Ugulino et al. (Ugulino, W.; Cardador, D.; Vega, K.; Velloso, E.; Milidiu, R.; Fuks, H. Wearable Computing: Accelerometers’ Data Classification of Body Postures and Movements Read more: <a href="http://groupware.les.inf.puc-rio.br/har#weight_lifting_exercises#ixzz38KSCiFFa">http://groupware.les.inf.puc-rio.br/har#weight_lifting_exercises#ixzz38KSCiFFa</a>) . The exercise described is a barbell lift. The outcomes of the exercise are categorized into five different groups A through E. A is the correct way of doing the exercise whereas categories B through E are with atleast one type of mistake either in movement or position. The data is collected via accelerometers connected to the arm, forearm and belt. The dumbbell has a sensor on it which tracks its position in the three dimensional space. Principal component Analysis and Random Forest methods have been used in building the model.Out of sample error from the cross validaation set is less than 3%</p>
+</div>
+
+<div>
+<h2>
+<a name="analysis" class="anchor" href="#analysis"><span class="octicon octicon-link"></span></a>Analysis:</h2>
+<p>Libraries have been used as part of the analysis are <em>randomForest</em>,<em>caret</em> and <em>e1071</em>. As first step data is cleansed of all the derived variables. Other variables that have unusable values are also cleaned up. Principal Component analysis is used to identify the variables that are used in the final model. pml-training.csv file is split into two dataframes with a 60/40 split ratio. 60 % of the data is used to train the model and remaining 40 % is used for cross validating the model.</p>
+<pre><code>set.seed(2343)
+library(randomForest)</code></pre>
+<pre><code>## randomForest 4.6-10
+## Type rfNews() to see new features/changes/bug fixes.</code></pre>
+<pre><code>library("e1071", lib.loc="C:/Program Files/R/R-3.0.3/library")
+library(caret)</code></pre>
+<pre><code>## Loading required package: lattice
+## Loading required package: ggplot2</code></pre>
+<pre><code>traindata&lt;-read.csv("./pml-training.csv", header=TRUE, as.is = TRUE, stringsAsFactors = FALSE, sep=',', na.strings=c('NA','','#DIV/0!'))
+testdata&lt;-read.csv("./pml-testing.csv", header=TRUE, as.is = TRUE, stringsAsFactors = FALSE, sep=',', na.strings=c('NA','','#DIV/0!'))
+collist&lt;-colnames(traindata)
+
+collistr&lt;-grep("avg_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist&lt;-collist[!collist %in% collistr]
+
+collistr&lt;-grep("stddev_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist&lt;-collist[!collist %in% collistr]
+
+collistr&lt;-grep("skewness_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist&lt;-collist[!collist %in% collistr]
+
+collistr&lt;-grep("var_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist&lt;-collist[!collist %in% collistr]
+
+collistr&lt;-grep("min_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist&lt;-collist[!collist %in% collistr]
+
+collistr&lt;-grep("max_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist&lt;-collist[!collist %in% collistr]
+
+collistr&lt;-grep("total_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist&lt;-collist[!collist %in% collistr]
+
+collistr&lt;-grep("kurtosis_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist&lt;-collist[!collist %in% collistr]
+
+collistr&lt;-grep("amplitude_", collist, ignore.case = TRUE, perl = FALSE, value = TRUE,
+     fixed = FALSE, useBytes = FALSE, invert = FALSE)
+collist&lt;-collist[!collist %in% collistr]
+
+dataforanaltrain&lt;-traindata[,collist]
+
+intrain&lt;-createDataPartition(y=dataforanaltrain$classe,p=0.6,list=FALSE)
+Train&lt;-dataforanaltrain[intrain,]
+Test&lt;-dataforanaltrain[-intrain,]
+
+collistn&lt;-collist[!collist %in% c("classe","X","user_name","raw_timestamp_part_1","raw_timestamp_part_2","cvtd_timestamp","new_window" ,        "num_window")]</code></pre>
+<p>Principal Component Analysis is used to identify the list of varaibles that need to go into the final model. From the screeplot it has been identified that the first four varaibles need to be in the model. These variables have been identified as <em>set1</em>. The second set <em>set2</em> has been identified based on Kaiser criterion (having stdevsq &gt; 1). The third set <em>set3</em> is identified as the list of variables that explain 99% of variation in the model.</p>
+<pre><code>x&lt;-prcomp(Train[,collistn])
+screeplot(x, type="lines")</code></pre>
+<p><img title="plot of chunk PCA_for_analysis" alt="plot of chunk PCA_for_analysis" width="672"></p>
+<pre><code>x$sdev^2</code></pre>
+<pre><code>##  [1] 3.617e+05 2.863e+05 2.222e+05 1.411e+05 1.259e+05 6.610e+04 4.070e+04
+##  [8] 3.064e+04 2.487e+04 1.411e+04 9.344e+03 8.102e+03 5.884e+03 4.727e+03
+## [15] 3.903e+03 3.232e+03 2.852e+03 2.483e+03 2.379e+03 1.726e+03 1.413e+03
+## [22] 1.248e+03 1.089e+03 9.240e+02 6.427e+02 5.189e+02 4.552e+02 4.366e+02
+## [29] 2.914e+02 2.304e+02 1.922e+02 9.536e+01 5.687e+01 3.571e+01 1.407e+01
+## [36] 1.156e+01 4.598e+00 3.854e+00 2.578e-01 1.718e-01 1.315e-01 1.054e-01
+## [43] 9.935e-02 5.811e-02 3.823e-02 3.464e-02 1.079e-02 1.342e-03</code></pre>
+<pre><code>Train$classe &lt;- as.factor(Train$classe)</code></pre>
+<pre><code>set1 &lt;- collistn[1:4]
+set2 &lt;- collistn[1:12]
+set3 &lt;- collistn[1:33]
+
+collistn&lt;-c(set1,"classe")
+modFit1 &lt;- train(classe ~., method="rf", data=Train[,collistn], trControl=trainControl(method='cv'), number=5, allowParallel=TRUE )
+testingPred1 &lt;- predict(modFit1, Test[,set1])
+table(testingPred1==Test$classe)</code></pre>
+<pre><code>## 
+## FALSE  TRUE 
+##   848  6998</code></pre>
+<pre><code>collistn&lt;-c(set2,"classe")
+modFit2 &lt;- train(classe ~., method="rf", data=Train[,collistn], trControl=trainControl(method='cv'), number=5, allowParallel=TRUE )
+testingPred2 &lt;- predict(modFit2, Test[,set2])
+table(testingPred2==Test$classe)</code></pre>
+<pre><code>## 
+## FALSE  TRUE 
+##   681  7165</code></pre>
+<pre><code>collistn&lt;-c(set3,"classe")
+modFit3 &lt;- train(classe ~., method="rf", data=Train[,collistn], trControl=trainControl(method='cv'), number=5, allowParallel=TRUE )
+testingPred3 &lt;- predict(modFit3, Test[,set3])
+table(testingPred3==Test$classe)</code></pre>
+<pre><code>## 
+## FALSE  TRUE 
+##   145  7701</code></pre>
+<p>Random forest was used to build the models and the model results thus obtained is used to predict the results of the cross validation sets. Ten fold cross validation is performed during the tree selection. The results for the final model are shown below. The final model modFit3 is used for predicting the results of pml-testing.csv data.</p>
+<pre><code>modFit3</code></pre>
+<pre><code>## Random Forest 
+## 
+## 11776 samples
+##    33 predictors
+##     5 classes: 'A', 'B', 'C', 'D', 'E' 
+## 
+## No pre-processing
+## Resampling: Cross-Validated (10 fold) 
+## 
+## Summary of sample sizes: 10597, 10598, 10598, 10598, 10599, 10599, ... 
+## 
+## Resampling results across tuning parameters:
+## 
+##   mtry  Accuracy  Kappa  Accuracy SD  Kappa SD
+##   2     1         1      0.005        0.007   
+##   20    1         1      0.003        0.004   
+##   30    1         1      0.004        0.006   
+## 
+## Accuracy was used to select the optimal model using  the largest value.
+## The final value used for the model was mtry = 17.</code></pre>
+<pre><code>testingPred &lt;- predict(modFit3, testdata[,set3])</code></pre>
+</div>
+
+<p></p>
+</div>
+
+<p>
+</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/subhashmantha">subhashmantha</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
